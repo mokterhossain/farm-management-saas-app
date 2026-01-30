@@ -1,0 +1,450 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+//////////////////////////////
+// 1️⃣ TENANT & AUTH
+//////////////////////////////
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  subdomain String   @unique
+  plan      String
+  status    String
+  createdAt DateTime @default(now())
+
+  users    User[]
+  projects Project[]
+}
+
+model User {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  refreshTokens RefreshToken[]
+
+  email    String
+  password String?
+  name     String?
+  image    String?
+
+  // Security
+  twoFactorEnabled Boolean @default(false)
+  twoFactorSecret  String?
+  backupCodes      Json?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+  deletedAt   DateTime?
+
+  accounts  Account[]
+  sessions  Session[]
+  userRoles UserRole[]
+  auditLogs AuditLog[]
+
+  @@unique([email, tenantId])
+  @@index([tenantId])
+  @@map("users")
+}
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  tenantId          String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([tenantId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  tenantId     String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("sessions")
+}
+
+model Role {
+  id       String  @id @default(cuid())
+  tenantId String? // NULL = system role
+  name     String
+  level    Int     @default(1)
+  isSystem Boolean @default(false)
+
+  users       UserRole[]
+  permissions RolePermission[]
+
+  @@unique([name, tenantId])
+  @@map("roles")
+}
+
+model Permission {
+  id       String @id @default(cuid())
+  action   String
+  resource String
+
+  roles RolePermission[]
+
+  @@unique([action, resource])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String @id @default(cuid())
+  roleId       String
+  permissionId String
+  conditions   Json?
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  id     String @id @default(cuid())
+  userId String
+  roleId String
+
+  user User @relation(fields: [userId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  userId    String?
+  userIp    String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+//////////////////////////////
+// 2️⃣ PROJECT
+//////////////////////////////
+
+model Project {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  name      String
+  location  String
+  status    String
+  startDate DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  housingUnits HousingUnit[]
+  batches      AnimalBatch[]
+  expenses     Expense[]
+
+  @@index([tenantId])
+}
+
+//////////////////////////////
+// 3️⃣ ANIMAL MASTER DATA
+//////////////////////////////
+
+model AnimalType {
+  id   String @id @default(uuid())
+  name String // Fish / Poultry / Livestock
+
+  species      Species[]
+  housingUnits HousingUnit[]
+  diseases     Disease[]
+}
+
+model Species {
+  id           String     @id @default(uuid())
+  tenantId     String?
+  animalTypeId String
+  animalType   AnimalType @relation(fields: [animalTypeId], references: [id])
+
+  commonName     String
+  scientificName String?
+
+  batches AnimalBatch[]
+
+  @@index([animalTypeId])
+}
+
+//////////////////////////////
+// 4️⃣ HOUSING
+//////////////////////////////
+
+model HousingUnit {
+  id           String @id @default(uuid())
+  tenantId     String
+  projectId    String
+  animalTypeId String
+
+  project    Project    @relation(fields: [projectId], references: [id])
+  animalType AnimalType @relation(fields: [animalTypeId], references: [id])
+
+  name     String
+  unitType String // Pond / Shed / Barn
+  capacity Int
+  status   String
+
+  batches         AnimalBatch[]
+  environmentLogs EnvironmentLog[]
+
+  @@index([tenantId])
+  @@index([projectId])
+  @@index([animalTypeId])
+}
+
+//////////////////////////////
+// 5️⃣ ANIMAL BATCHES
+//////////////////////////////
+
+model AnimalBatch {
+  id            String @id @default(uuid())
+  tenantId      String
+  projectId     String
+  housingUnitId String
+  speciesId     String
+
+  project     Project     @relation(fields: [projectId], references: [id])
+  housingUnit HousingUnit @relation(fields: [housingUnitId], references: [id])
+  species     Species     @relation(fields: [speciesId], references: [id])
+
+  startDate       DateTime
+  initialQuantity Int
+  purpose         String
+  status          String
+
+  growthRecords GrowthRecord[]
+  feedingLogs   FeedingLog[]
+  production    ProductionRecord[]
+  treatments    Treatment[]
+  harvests      Harvest[]
+
+  @@index([tenantId])
+  @@index([projectId])
+  @@index([housingUnitId])
+  @@index([speciesId])
+}
+
+//////////////////////////////
+// 6️⃣ FEEDING
+//////////////////////////////
+
+model FeedType {
+  id           String @id @default(uuid())
+  tenantId     String?
+  animalTypeId String
+
+  name       String
+  proteinPct Float?
+
+  feedingLogs FeedingLog[]
+
+  @@index([animalTypeId])
+}
+
+model FeedingLog {
+  id         String @id @default(uuid())
+  tenantId   String
+  batchId    String
+  feedTypeId String
+
+  batch    AnimalBatch @relation(fields: [batchId], references: [id])
+  feedType FeedType    @relation(fields: [feedTypeId], references: [id])
+
+  feedDate DateTime
+  quantity Float
+
+  @@index([tenantId])
+  @@index([batchId])
+}
+
+//////////////////////////////
+// 7️⃣ GROWTH & PRODUCTION
+//////////////////////////////
+
+model GrowthRecord {
+  id       String @id @default(uuid())
+  tenantId String
+  batchId  String
+
+  batch AnimalBatch @relation(fields: [batchId], references: [id])
+
+  recordDate DateTime
+  avgWeight  Float?
+  mortality  Int?
+
+  @@index([tenantId])
+  @@index([batchId])
+}
+
+model ProductionRecord {
+  id       String @id @default(uuid())
+  tenantId String
+  batchId  String
+
+  batch AnimalBatch @relation(fields: [batchId], references: [id])
+
+  productionDate DateTime
+  type           String
+  quantity       Float
+  unit           String
+
+  @@index([tenantId])
+  @@index([batchId])
+}
+
+//////////////////////////////
+// 8️⃣ HEALTH
+//////////////////////////////
+
+model Disease {
+  id           String     @id @default(uuid())
+  animalTypeId String
+  animalType   AnimalType @relation(fields: [animalTypeId], references: [id])
+
+  name String
+
+  treatments Treatment[]
+}
+
+model Treatment {
+  id        String @id @default(uuid())
+  tenantId  String
+  batchId   String
+  diseaseId String
+
+  batch   AnimalBatch @relation(fields: [batchId], references: [id])
+  disease Disease     @relation(fields: [diseaseId], references: [id])
+
+  treatmentDate DateTime
+  medicine      String
+  dosage        String
+  result        String?
+
+  @@index([tenantId])
+  @@index([batchId])
+  @@index([diseaseId])
+}
+
+//////////////////////////////
+// 9️⃣ ENVIRONMENT
+//////////////////////////////
+
+model EnvironmentLog {
+  id            String @id @default(uuid())
+  tenantId      String
+  housingUnitId String
+
+  housingUnit HousingUnit @relation(fields: [housingUnitId], references: [id])
+
+  recordDate  DateTime
+  temperature Float?
+  humidity    Float?
+  ph          Float?
+
+  @@index([tenantId])
+  @@index([housingUnitId])
+}
+
+//////////////////////////////
+// 🔟 FINANCIALS
+//////////////////////////////
+
+model Expense {
+  id        String @id @default(uuid())
+  tenantId  String
+  projectId String
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  category    String
+  amount      Float
+  expenseDate DateTime
+
+  @@index([tenantId])
+  @@index([projectId])
+}
+
+model Harvest {
+  id       String @id @default(uuid())
+  tenantId String
+  batchId  String
+
+  batch AnimalBatch @relation(fields: [batchId], references: [id])
+
+  harvestDate DateTime
+  quantity    Int
+  avgWeight   Float?
+
+  sales Sale[]
+
+  @@index([tenantId])
+  @@index([batchId])
+}
+
+model Sale {
+  id        String @id @default(uuid())
+  tenantId  String
+  harvestId String
+
+  harvest Harvest @relation(fields: [harvestId], references: [id])
+
+  totalAmount   Float
+  paymentStatus String
+
+  @@index([tenantId])
+  @@index([harvestId])
+}
+
