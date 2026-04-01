@@ -45,8 +45,20 @@ async function main() {
     },
     include: { users: true }
   });
+// 4. Create System Expense Category (The Fixed Part)
+  const categories = [
+  { name: "Cash", tenantId: null },
+  { name: "Bank", tenantId: null },
+  { name: "Card", tenantId: null },
+  { name: "Mobile Banking", tenantId: null },
+];
 
-  console.log("✅ Seed finished!");
+await prisma.expenseCategory.createMany({
+  data: categories,
+  skipDuplicates: true, // avoids duplicate errors
+});
+
+console.log("✅ Multiple categories seeded!");
 }
 
 main()
