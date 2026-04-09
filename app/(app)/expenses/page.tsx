@@ -10,24 +10,7 @@ import ExpenseSkeletonGrid from "./components/expense-skeleton";
 import ExpenseModal from "./components/expense-modal";
 import { toast } from "sonner";
 import ConfirmModal from "@/components/ConfirmModal";
-
-type Expense = {
-  id: string;
-  amount: number;
-  description?: string;
-  expenseDate: string;
-  category?: { name: string };
-  project?: { name: string };
-};
-
-type ExpenseInput = {
-  id?: string;
-  amount: number;
-  description?: string;
-  categoryId: string;
-  projectId: string;
-  expenseDate: string;
-};
+import { Expense, ExpenseInput } from "@/types/expense";
 
 export default function ExpensesPage() {
   const [view, setView] = useState<"grid" | "table">("grid");
@@ -39,7 +22,7 @@ export default function ExpensesPage() {
   const [loading, setLoading] = useState(true);
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Expense | null>(null);
+  const [editing, setEditing] = useState<ExpenseInput | null>(null);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -77,7 +60,7 @@ export default function ExpensesPage() {
       if (!res.ok) throw new Error("Failed to save expense");
 
       toast.success(
-        `Expense ${editing ? "updated" : "created"} successfully!`
+        `Expense ${editing?.id ? "updated" : "created"} successfully!`
       );
 
       setModalOpen(false);
@@ -89,7 +72,14 @@ export default function ExpensesPage() {
   };
 
   const handleEdit = (expense: Expense) => {
-    setEditing(expense);
+    setEditing({
+      id: expense.id,
+      amount: expense.amount,
+      description: expense.description,
+      categoryId: expense.categoryId ?? "",
+      projectId: expense.projectId ?? "",
+      expenseDate: expense.expenseDate,
+    });
     setModalOpen(true);
   };
 

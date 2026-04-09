@@ -1,13 +1,5 @@
 import ExpenseActions from "./expense-actions";
-
-type Expense = {
-  id: string;
-  amount: number;
-  description?: string;
-  expenseDate: string;
-  category?: { name: string };
-  project?: { name: string };
-};
+import { Expense } from "@/types/expense";
 
 type Props = {
   expenses: Expense[];
@@ -15,11 +7,7 @@ type Props = {
   onDelete: (id: string) => void;
 };
 
-export default function ExpenseTable({
-  expenses,
-  onEdit,
-  onDelete,
-}: Props) {
+export default function ExpenseTable({ expenses, onEdit, onDelete }: Props) {
   return (
     <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
       <table className="w-full text-sm">
@@ -65,9 +53,9 @@ export default function ExpenseTable({
               {/* Actions */}
               <td className="px-4 py-3 text-right">
                 <ExpenseActions
-                  expenseId={e.id}
+                  expenseId={e.id!} // non-null assertion because id is required
                   onEdit={() => onEdit(e)}
-                  onDelete={() => onDelete(e.id)}
+                  onDelete={() => onDelete(e.id!)}
                 />
               </td>
             </tr>

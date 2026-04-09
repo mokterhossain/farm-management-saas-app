@@ -1,14 +1,6 @@
 import { CalendarDays, Wallet } from "lucide-react";
 import ExpenseActions from "./expense-actions";
-
-type Expense = {
-  id: string;
-  amount: number;
-  description?: string;
-  expenseDate: string;
-  category?: { name: string };
-  project?: { name: string };
-};
+import { Expense } from "@/types/expense";
 
 type Props = {
   expenses: Expense[];
@@ -16,11 +8,7 @@ type Props = {
   onDelete: (id: string) => void;
 };
 
-export default function ExpenseCards({
-  expenses,
-  onEdit,
-  onDelete,
-}: Props) {
+export default function ExpenseCards({ expenses, onEdit, onDelete }: Props) {
   return (
     <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
       {expenses.map((e) => (
@@ -31,9 +19,9 @@ export default function ExpenseCards({
           {/* Actions */}
           <div className="absolute right-4 top-4">
             <ExpenseActions
-              expenseId={e.id}
+              expenseId={e.id!}
               onEdit={() => onEdit(e)}
-              onDelete={() => onDelete(e.id)}
+              onDelete={() => onDelete(e.id!)}
             />
           </div>
 
