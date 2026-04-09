@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
-// ------------------ DELETE EXPENSE ------------------
 export async function DELETE(
   _: Request,
   context: { params: Promise<{ id: string }> }
@@ -13,21 +12,18 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id } = await context.params; // ✅ unwrap the promise
+  // ✅ await params
+  const { id } = await context.params;
   const tenantId = (session.user as any).tenantId;
 
-  try {
-    await prisma.expense.delete({
-      where: {
-        id, // must have id
-      },
-    });
+  await prisma.expense.delete({
+    where: {
+      id,
+      tenantId, // 🔐 prevents cross-tenant delete
+    },
+  });
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
-  }
+  return NextResponse.json({ success: true });
 }
 
 // ------------------ UPDATE EXPENSE ------------------
@@ -65,7 +61,7 @@ export async function PUT(
         attachmentUrl: body.attachmentUrl || null,
         isRecurring: body.isRecurring ?? false,
         recurringInterval: body.recurringInterval || null,
-        updatedBy,
+        //updatedBy,
         expenseDate: body.expenseDate ? new Date(body.expenseDate) : new Date(),
       },
     });
@@ -76,3 +72,4 @@ export async function PUT(
     return NextResponse.json({ error: "Failed to update expense" }, { status: 500 });
   }
 }
+
