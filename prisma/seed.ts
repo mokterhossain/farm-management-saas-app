@@ -47,11 +47,25 @@ async function main() {
   });
 // 4. Create System Expense Category (The Fixed Part)
   const categories = [
-  { name: "Cash", tenantId: null },
-  { name: "Bank", tenantId: null },
-  { name: "Card", tenantId: null },
-  { name: "Mobile Banking", tenantId: null },
-];
+    { name: "Feed / Raw Materials", tenantId: "20c78c74-5124-4700-a8f4-c123113c236c" },
+    { name: "Seeds / Plants", tenantId: "20c78c74-5124-4700-a8f4-c123113c236c" },
+    { name: "Fertilizers", tenantId: "20c78c74-5124-4700-a8f4-c123113c236c" },
+    { name: "Medicine", tenantId: "20c78c74-5124-4700-a8f4-c123113c236c" },
+    { name: "Wages / Labor", tenantId: "20c78c74-5124-4700-a8f4-c123113c236c" },
+    { name: "Contractor Payments", tenantId: "20c78c74-5124-4700-a8f4-c123113c236c" },
+    { name: "Staff Salary", tenantId: "20c78c74-5124-4700-a8f4-c123113c236c" },
+    { name: "Fuel", tenantId: "20c78c74-5124-4700-a8f4-c123113c236c" },
+    { name: "Transport", tenantId: "20c78c74-5124-4700-a8f4-c123113c236c" },
+    { name: "Maintenance", tenantId: "20c78c74-5124-4700-a8f4-c123113c236c" },
+    { name: "Utilities", tenantId: "20c78c74-5124-4700-a8f4-c123113c236c" },
+    { name: "Equipment Purchase", tenantId: "20c78c74-5124-4700-a8f4-c123113c236c" },
+    { name: "Equipment Repair", tenantId: "20c78c74-5124-4700-a8f4-c123113c236c" },
+    { name: "Machinery Maintenance", tenantId: "20c78c74-5124-4700-a8f4-c123113c236c" },
+    { name: "Electricity Bill", tenantId: "20c78c74-5124-4700-a8f4-c123113c236c" },
+    { name: "Internet / Mobile", tenantId: "20c78c74-5124-4700-a8f4-c123113c236c" },
+    { name: "Office", tenantId: "20c78c74-5124-4700-a8f4-c123113c236c" },
+    { name: "Miscellaneous", tenantId: "20c78c74-5124-4700-a8f4-c123113c236c" },
+  ];
 
 await prisma.expenseCategory.createMany({
   data: categories,
